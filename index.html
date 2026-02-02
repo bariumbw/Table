@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>夢幻婚禮排座小幫手</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -10,55 +11,203 @@
             --pink-bg: #fff5f7;
             --pink-main: #ffb3c1;
             --blue-main: #a2d2ff;
+            --text-dark: #555;
         }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--pink-bg); margin: 0; display: flex; height: 100vh; }
-        
-        /* 左側控制欄 */
-        #sidebar { width: 300px; background: white; border-right: 2px solid var(--pink-main); padding: 20px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
-        .config-box { background: #fdf2f4; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .config-box input { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        
-        .btn { cursor: pointer; padding: 10px; border: none; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 8px; transition: 0.3s; }
-        .btn-pink { background: var(--pink-main); color: white; }
-        .btn-blue { background: var(--blue-main); color: white; }
-        
-        #guest-list-container { flex: 1; overflow-y: auto; border: 2px dashed var(--pink-main); border-radius: 15px; padding: 10px; margin-top: 10px; background: #fff; min-height: 100px; }
-        .guest-card { padding: 8px; margin-bottom: 5px; border-radius: 6px; background: white; border-left: 6px solid var(--blue-main); cursor: move; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .guest-card.female { border-left-color: var(--pink-main); }
 
-        /* 右側排座區 */
-        #canvas { flex: 1; padding: 40px; overflow: auto; display: flex; flex-direction: column; align-items: center; }
-        .row-container { display: flex; gap: 50px; margin-bottom: 60px; }
-        .table-wrap { position: relative; width: 180px; height: 180px; }
-        .table-center { width: 80px; height: 80px; background: white; border: 3px solid var(--pink-main); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; font-weight: bold; z-index: 2; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .seat { width: 42px; height: 42px; border-radius: 50%; background: white; border: 1px dashed var(--blue-main); position: absolute; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 3; }
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--pink-bg);
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            color: var(--text-dark);
+        }
+
+        /* 左側側欄樣式 */
+        #sidebar {
+            width: 300px; 
+            background: white; 
+            border-right: 2px solid var(--pink-main);
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px; 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        h2 { 
+            color: var(--pink-main); 
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
+
+        .config-box { 
+            background: #fdf2f4; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            font-size: 14px; 
+        }
+
+        .config-box label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .config-box input { 
+            width: 100%; 
+            padding: 8px; 
+            margin-bottom: 10px;
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+        }
+
+        .btn {
+            cursor: pointer;
+            padding: 10px; 
+            border: none; 
+            border-radius: 20px;
+            font-weight: bold; 
+            transition: 0.3s; 
+            margin-top: 10px; 
+            width: 100%;
+        }
+
+        .btn-pink { 
+            background: var(--pink-main); 
+            color: white; 
+        }
+
+        .btn-blue { 
+            background: var(--blue-main); 
+            color: white; 
+        }
+
+        .btn:hover { 
+            opacity: 0.8; 
+            transform: scale(1.02); 
+        }
+
+        /* 賓客名單容器 */
+        #guest-list-container {
+            flex: 1;
+            overflow-y: auto; 
+            border: 2px dashed var(--pink-main);
+            border-radius: 15px; 
+            padding: 10px; 
+            margin-top: 15px; 
+            background: #fff;
+            min-height: 200px;
+        }
+
+        .guest-card {
+            padding: 10px;
+            margin-bottom: 8px; 
+            border-radius: 8px;
+            background: white; 
+            border-left: 6px solid var(--blue-main);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            cursor: move; 
+            font-size: 13px;
+        }
+
+        .guest-card.female { 
+            border-left-color: var(--pink-main); 
+        }
+
+        /* 右側畫布區域 */
+        #canvas { 
+            flex: 1;
+            padding: 40px; 
+            overflow: auto; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        .row-container { 
+            display: flex; 
+            gap: 60px; 
+            margin-bottom: 80px; 
+        }
+        
+        .table-wrap { 
+            position: relative;
+            width: 180px; 
+            height: 180px; 
+        }
+
+        .table-center {
+            width: 90px;
+            height: 90px; 
+            background: white; 
+            border: 3px solid var(--pink-main);
+            border-radius: 50%; 
+            position: absolute; 
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex; 
+            align-items: center;
+            justify-content: center; 
+            font-weight: bold; 
+            z-index: 2;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .seat {
+            width: 45px;
+            height: 45px; 
+            border-radius: 50%; 
+            background: white;
+            border: 1px dashed var(--blue-main); 
+            position: absolute;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 10px;
+            z-index: 3;
+        }
+
+        .seat .guest-card { 
+            border: none; 
+            box-shadow: none; 
+            margin: 0;
+            padding: 5px; 
+            width: 100%; 
+            text-align: center; 
+        }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <h2 style="color:var(--pink-main); text-align:center;">💍 排座助手</h2>
+    <h2>💕 婚禮排座小幫手</h2>
     
     <div class="config-box">
-        <label>桌數分佈 (如: 2,3,3)</label>
+        <label>桌數分佈 (例如: 2,3,3)</label>
         <input type="text" id="layout-config" value="2,3,3">
+        
         <label>每桌人數</label>
         <input type="number" id="per-table-limit" value="12">
+        
         <button class="btn btn-pink" onclick="createTables()">更新桌位佈局</button>
     </div>
 
-    <div class="config-box" style="background:#eef7ff;">
-        <input type="text" id="manual-name" placeholder="賓客姓名">
-        <select id="manual-side" style="width:100%; padding:5px; margin-top:5px;">
-            <option value="男家">男家 (藍)</option>
-            <option value="女家">女家 (粉)</option>
+    <div class="config-box" style="background: #eef7ff;">
+        <label>手動加入賓客</label>
+        <input type="text" id="manual-name" placeholder="輸入姓名...">
+        <select id="manual-side" style="width:100%; margin-top:5px; padding:5px; border-radius:5px;">
+            <option value="男家">男家 (藍色)</option>
+            <option value="女家">女家 (粉色)</option>
         </select>
-        <button class="btn btn-blue" onclick="addManualGuest()">加入賓客</button>
+        <button class="btn btn-blue" onclick="addManualGuest()">加入名單</button>
     </div>
 
     <button class="btn btn-pink" onclick="downloadTemplate()">📥 下載 Excel 範本</button>
     <button class="btn btn-blue" onclick="document.getElementById('excel-upload').click()">📤 上傳 Excel 名單</button>
-    <input type="file" id="excel-upload" hidden onchange="handleImport(this)">
+    <input type="file" id="excel-upload" hidden accept=".xlsx, .xls" onchange="handleImport(this)">
 
     <div id="guest-list-container"></div>
 </div>
@@ -68,86 +217,155 @@
 </div>
 
 <script>
-    // 初始化拖拽名單
-    new Sortable(document.getElementById('guest-list-container'), { group: 'wedding', animation: 150 });
+    // 初始化左側名單的拖放功能 [cite: 31]
+    new Sortable(document.getElementById('guest-list-container'), {
+        group: 'wedding',
+        animation: 150
+    });
 
+    /**
+     * 生成桌位佈局的主要函數 [cite: 32]
+     * 讀取輸入框的值並動態繪製桌子與座位
+     */
     function createTables() {
         const stage = document.getElementById('tables-stage');
-        stage.innerHTML = '';
-        const layout = document.getElementById('layout-config').value.split(',').map(Number);
-        const seatCount = parseInt(document.getElementById('per-table-limit').value); [cite: 33, 34]
+        stage.innerHTML = ''; // 清空目前的內容 [cite: 33]
 
-        layout.forEach((count, rowIndex) => {
+        // 讀取桌數配置 (如: 2,3,3) 並轉換為數字陣列 [cite: 33]
+        const layoutConfig = document.getElementById('layout-config').value;
+        const layout = layoutConfig.split(',').map(function(item) {
+            return parseInt(item.trim());
+        });
+
+        // 讀取每桌人數 [cite: 33]
+        const seatCount = parseInt(document.getElementById('per-table-limit').value);
+
+        // 遍歷每一行 [cite: 34]
+        layout.forEach(function(count, rowIndex) {
             const rowDiv = document.createElement('div');
-            rowDiv.className = 'row-container'; [cite: 34]
+            rowDiv.className = 'row-container';
+            
+            // 在每一行中生成指定數量的桌子 [cite: 34]
             for (let i = 1; i <= count; i++) {
                 const tableWrap = document.createElement('div');
-                tableWrap.className = 'table-wrap'; [cite: 35]
+                tableWrap.className = 'table-wrap'; // [cite: 35]
                 
+                // 創建桌子中心文字 [cite: 35]
                 const center = document.createElement('div');
                 center.className = 'table-center';
-                center.innerText = `第 ${rowIndex+1}-${i} 桌`;
-                tableWrap.appendChild(center); [cite: 35]
+                center.innerText = '第 ' + (rowIndex + 1) + '-' + i + ' 桌';
+                tableWrap.appendChild(center);
 
+                // 根據人數生成環繞的座位 [cite: 36]
                 for (let j = 0; j < seatCount; j++) {
                     const seat = document.createElement('div');
                     seat.className = 'seat';
-                    const angle = (j / seatCount) * 2 * Math.PI - Math.PI/2;
-                    const r = 75; [cite: 36, 37]
-                    seat.style.left = (90 + r * Math.cos(angle) - 21) + 'px';
-                    seat.style.top = (90 + r * Math.sin(angle) - 21) + 'px'; [cite: 38]
 
+                    // 計算圓形排列的座標 (三角函數) [cite: 36, 37]
+                    const angle = (j / seatCount) * 2 * Math.PI - Math.PI / 2;
+                    const radius = 75; // 座位距離圓心的距離 [cite: 37]
+                    
+                    // 90 是 table-wrap 寬高的一半，22.5 是座位寬高的一半 [cite: 37]
+                    const x = 90 + radius * Math.cos(angle) - 22.5;
+                    const y = 90 + radius * Math.sin(angle) - 22.5;
+                    
+                    seat.style.left = x + 'px'; // [cite: 37]
+                    seat.style.top = y + 'px'; // [cite: 38]
+
+                    // 為每個座位初始化拖放功能 [cite: 38, 39]
                     new Sortable(seat, {
                         group: 'wedding',
                         animation: 150,
-                        onAdd: (evt) => {
+                        onAdd: function(evt) {
+                            // 如果座位上已經有賓客，則將新來的賓客彈回名單 [cite: 39]
                             if (evt.to.children.length > 1) {
                                 document.getElementById('guest-list-container').appendChild(evt.item);
-                                alert('這位置已經有人了！'); [cite: 39]
+                                alert('這個位置已經有人坐囉！'); // [cite: 39, 40]
                             }
                         }
                     });
-                    tableWrap.appendChild(seat); [cite: 41]
+                    
+                    tableWrap.appendChild(seat); // [cite: 41]
                 }
-                rowDiv.appendChild(tableWrap);
+                rowDiv.appendChild(tableWrap); // [cite: 41]
             }
-            stage.appendChild(rowDiv); [cite: 42]
+            stage.appendChild(rowDiv); // [cite: 42]
         });
     }
 
+    /**
+     * 手動新增賓客的邏輯 [cite: 43]
+     */
     function addManualGuest() {
-        const name = document.getElementById('manual-name').value;
-        const side = document.getElementById('manual-side').value; [cite: 44]
-        if (name) { renderGuest(name, side, "朋友"); document.getElementById('manual-name').value = ''; } [cite: 45]
+        const nameInput = document.getElementById('manual-name');
+        const sideSelect = document.getElementById('manual-side');
+        
+        const name = nameInput.value; // [cite: 43]
+        const side = sideSelect.value; // [cite: 44]
+
+        if (!name) {
+            alert('請輸入姓名');
+            return;
+        }
+
+        renderGuest(name, side, "朋友"); // [cite: 44]
+        nameInput.value = ''; // 清空輸入框 [cite: 44]
     }
 
+    /**
+     * 將賓客資訊渲染成可拖拽的卡片 [cite: 45]
+     */
     function renderGuest(name, side, role) {
         const card = document.createElement('div');
-        card.className = `guest-card ${side === '女家' ? 'female' : ''}`; [cite: 46]
-        card.innerHTML = `<strong>${name}</strong><br><small>${side}</small>`;
-        document.getElementById('guest-list-container').appendChild(card); [cite: 47]
+        // 根據性別/家方設定樣式類別 [cite: 46]
+        card.className = 'guest-card' + (side === '女家' ? ' female' : '');
+        
+        card.innerHTML = '<strong>' + name + '</strong><br><small>' + side + ' | ' + role + '</small>'; // [cite: 46]
+        document.getElementById('guest-list-container').appendChild(card); // [cite: 46]
     }
 
+    /**
+     * 生成 Excel 範本並下載 [cite: 47]
+     */
     function downloadTemplate() {
-        const data = [["姓名", "男家/女家", "分類"], ["張三", "男家", "親戚"], ["李四", "女家", "同事"]]; [cite: 48]
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "賓客清單");
-        XLSX.writeFile(wb, "婚禮賓客範本.xlsx"); [cite: 49]
+        const data = [
+            ["姓名", "男家/女家", "分類"],
+            ["張三", "男家", "親戚"],
+            ["李四", "女家", "同事"]
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(data); // [cite: 48]
+        const wb = XLSX.utils.book_new(); // [cite: 48]
+        XLSX.utils.book_append_sheet(wb, ws, "賓客清單"); // [cite: 48]
+        XLSX.writeFile(wb, "婚禮賓客名單範本.xlsx"); // [cite: 48]
     }
 
+    /**
+     * 處理 Excel 匯入名單 [cite: 49]
+     */
     function handleImport(input) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result); [cite: 50]
-            const wb = XLSX.read(data, {type: 'array'});
-            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); [cite: 51]
-            json.forEach(item => renderGuest(item['姓名'], item['男家/女家'], item['分類'])); [cite: 52]
+        const file = input.files[0]; // [cite: 49]
+        if (!file) return;
+
+        const reader = new FileReader(); // [cite: 50]
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result); // [cite: 50]
+            const workbook = XLSX.read(data, {type: 'array'}); // [cite: 51]
+            const sheet = workbook.Sheets[workbook.SheetNames[0]]; // [cite: 51]
+            const json = XLSX.utils.sheet_to_json(sheet); // [cite: 51]
+            
+            // 遍歷 Excel 內容並生成賓客標籤 [cite: 52]
+            json.forEach(function(item) {
+                renderGuest(item['姓名'], item['男家/女家'], item['分類'] || '朋友'); // [cite: 52]
+            });
         };
-        reader.readAsArrayBuffer(input.files[0]);
+        reader.readAsArrayBuffer(file); // [cite: 53]
     }
 
-    createTables();
+    // 初始化時自動生成一次桌位 [cite: 53]
+    window.onload = function() {
+        createTables();
+    };
 </script>
+
 </body>
 </html>
