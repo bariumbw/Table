@@ -27,7 +27,7 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* 第一層：功能操作區 */
+        /* 第一層：功能操作區 (垂直三行獨立) */
         #control-panel {
             width: 100%;
             background: white;
@@ -51,7 +51,7 @@
             border: 1px solid var(--pink-main);
             width: 100%; 
             box-sizing: border-box;
-            overflow-x: auto; /* 防止小螢幕擠壓按鈕 */
+            overflow-x: auto;
         }
 
         .config-section label {
@@ -71,7 +71,7 @@
             min-width: 60px;
         }
 
-        /* 第二層：未分配名單區 */
+        /* 第二層：未分配名單區 (橫向三行滾動) */
         #list-panel {
             background: #fff;
             padding: 8px 10px;
@@ -93,7 +93,7 @@
         #guest-list-container {
             display: flex;
             flex-flow: column wrap; 
-            height: 110px; 
+            height: 120px; /* 稍微增加高度以容納分類文字 */
             overflow-x: auto; 
             overflow-y: hidden;
             gap: 6px;
@@ -112,15 +112,15 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             cursor: move;
             font-size: 11px;
-            width: 90px; 
-            height: 28px; 
+            width: 100px; 
+            height: 34px; /* 增加高度以容納兩行文字 */
             display: flex;
+            flex-direction: column; /* 讓姓名與分類垂直排列 */
             align-items: center;
             justify-content: center;
             box-sizing: border-box;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
             touch-action: none;
         }
 
@@ -128,27 +128,33 @@
             border-left-color: var(--pink-main);
         }
 
-        /* 第三層：桌位畫布 (核心修正部分) */
+        .guest-card small {
+            font-size: 9px;
+            color: #888;
+            transform: scale(0.9);
+        }
+
+        /* 第三層：桌位畫布 (橫向不換行滾動) */
         #canvas {
             flex: 1;
             padding: 20px 10px;
-            overflow: auto; /* 允許畫布上下左右滾動 */
+            overflow: auto; 
             display: block; 
             width: 100%;
             box-sizing: border-box;
         }
 
         #tables-stage {
-            display: inline-flex; /* 關鍵：讓容器根據內容橫向伸展 */
+            display: inline-flex; 
             flex-direction: column;
-            align-items: flex-start; /* 靠左排列 */
+            align-items: flex-start;
             min-width: 100%;
         }
 
         .row-container {
             display: flex;
-            flex-direction: row; /* 強制橫向排列 */
-            flex-wrap: nowrap;   /* 關鍵：禁止換行 */
+            flex-direction: row; 
+            flex-wrap: nowrap;   
             gap: 40px; 
             margin-bottom: 80px;
             padding: 0 20px;
@@ -158,7 +164,7 @@
             position: relative;
             width: 160px; 
             height: 160px;
-            flex-shrink: 0; /* 關鍵：防止桌子被壓縮 */
+            flex-shrink: 0; 
         }
 
         .table-center {
@@ -230,7 +236,7 @@
         <input type="text" id="layout-config" value="2,3,3" placeholder="例如: 2,3,3">
         <label>人數:</label>
         <input type="number" id="per-table-limit" value="12">
-        <button class="btn btn-pink" onclick="createTables()">套用</button>
+        <button class="btn btn-pink" onclick="createTables()">套用佈局</button>
     </div>
 
     <div class="config-section" style="background: #eef7ff; border-color: var(--blue-main);">
@@ -240,19 +246,24 @@
             <option value="男家">男家</option>
             <option value="女家">女家</option>
         </select>
+        <select id="manual-role">
+            <option value="朋友">朋友</option>
+            <option value="親戚">親戚</option>
+            <option value="同事">同事</option>
+        </select>
         <button class="btn btn-blue" onclick="addManualGuest()">加入</button>
     </div>
 
     <div class="config-section">
         <label>3. 數據:</label>
-        <button class="btn btn-grey" onclick="downloadTemplate()">範本</button>
+        <button class="btn btn-grey" onclick="downloadTemplate()">下載範本</button>
         <button class="btn btn-blue" onclick="document.getElementById('excel-upload').click()">匯入 Excel</button>
         <input type="file" id="excel-upload" hidden accept=".xlsx, .xls" onchange="handleImport(this)">
     </div>
 </div>
 
 <div id="list-panel">
-    <h3>💕 名單 (左右拉動)</h3>
+    <h3>💕 名單 (三行顯示，左右拉動)</h3>
     <div id="guest-list-container"></div>
 </div>
 
@@ -261,6 +272,7 @@
 </div>
 
 <script>
+    // 初始化拖放
     new Sortable(document.getElementById('guest-list-container'), {
         group: 'wedding',
         animation: 150,
@@ -268,27 +280,24 @@
         touchStartThreshold: 5
     });
 
+    /**
+     * 生成桌位
+     */
     function createTables() {
         const stage = document.getElementById('tables-stage');
         stage.innerHTML = ''; 
 
         const layoutConfig = document.getElementById('layout-config').value;
-        const layout = layoutConfig.split(',').map(function(item) {
-            return parseInt(item.trim()) || 0;
-        });
-
+        const layout = layoutConfig.split(',').map(item => parseInt(item.trim()) || 0);
         const seatCount = parseInt(document.getElementById('per-table-limit').value) || 12;
 
-        layout.forEach(function(count, rowIndex) {
+        layout.forEach((count, rowIndex) => {
             if (count <= 0) return;
-            
             const rowDiv = document.createElement('div');
             rowDiv.className = 'row-container';
-            
             for (let i = 1; i <= count; i++) {
                 const tableWrap = document.createElement('div');
                 tableWrap.className = 'table-wrap'; 
-                
                 const center = document.createElement('div');
                 center.className = 'table-center';
                 center.innerText = (rowIndex + 1) + '-' + i;
@@ -307,7 +316,7 @@
                     new Sortable(seat, {
                         group: 'wedding',
                         animation: 150,
-                        onAdd: function(evt) {
+                        onAdd: (evt) => {
                             if (evt.to.children.length > 1) {
                                 document.getElementById('guest-list-container').appendChild(evt.item);
                                 alert('已有人位！'); 
@@ -322,51 +331,64 @@
         });
     }
 
+    /**
+     * 手動新增
+     */
     function addManualGuest() {
         const nameInput = document.getElementById('manual-name');
         const sideSelect = document.getElementById('manual-side');
+        const roleSelect = document.getElementById('manual-role');
         const name = nameInput.value; 
         const side = sideSelect.value; 
+        const role = roleSelect.value;
         if (!name) return;
-        renderGuest(name, side, "賓客"); 
+        renderGuest(name, side, role); 
         nameInput.value = ''; 
     }
 
+    /**
+     * 渲染賓客標籤 (包含姓名、家方、分類)
+     */
     function renderGuest(name, side, role) {
         const card = document.createElement('div');
         card.className = 'guest-card' + (side === '女家' ? ' female' : '');
-        card.innerHTML = '<strong>' + name + '</strong>'; 
+        // 核心修改：同時顯示姓名與分類
+        card.innerHTML = `<strong>${name}</strong><small>${side} | ${role}</small>`; 
         document.getElementById('guest-list-container').appendChild(card); 
     }
 
+    /**
+     * Excel 範本
+     */
     function downloadTemplate() {
-        const data = [["姓名", "男家/女家", "分類"], ["範例", "男家", "親戚"]];
+        const data = [["姓名", "男家/女家", "分類"], ["範例賓客", "男家", "親戚"]];
         const ws = XLSX.utils.aoa_to_sheet(data); 
         const wb = XLSX.utils.book_new(); 
         XLSX.utils.book_append_sheet(wb, ws, "賓客清單"); 
-        XLSX.writeFile(wb, "婚禮範本.xlsx"); 
+        XLSX.writeFile(wb, "婚禮名單範本.xlsx"); 
     }
 
+    /**
+     * Excel 匯入
+     */
     function handleImport(input) {
         const file = input.files[0]; 
         if (!file) return;
         const reader = new FileReader(); 
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             const data = new Uint8Array(e.target.result); 
             const workbook = XLSX.read(data, {type: 'array'}); 
             const sheet = workbook.Sheets[workbook.SheetNames[0]]; 
             const json = XLSX.utils.sheet_to_json(sheet); 
-            json.forEach(function(item) {
-                renderGuest(item['姓名'], item['男家/女家'], item['分類']); 
+            json.forEach(item => {
+                renderGuest(item['姓名'], item['男家/女家'], item['分類'] || '朋友'); 
             });
         };
         reader.readAsArrayBuffer(file); 
         input.value = '';
     }
 
-    window.onload = function() {
-        createTables();
-    };
+    window.onload = () => createTables();
 </script>
 
 </body>
