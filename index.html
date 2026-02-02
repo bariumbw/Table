@@ -21,7 +21,7 @@
             display: flex; 
             flex-direction: column; 
             height: 100vh; 
-            overflow: hidden; /* 防止主頁面出現雙滾動條 */
+            overflow: hidden; 
             color: var(--text-dark);
         }
 
@@ -34,26 +34,28 @@
             flex-direction: row;
             gap: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            z-index: 10;
+            z-index: 100; /* 確保在最上層 */
             box-sizing: border-box;
-            align-items: flex-start;
+            align-items: center;
+            flex-wrap: nowrap;
         }
 
         .config-section {
             background: #fdf2f4;
-            padding: 10px;
+            padding: 10px 15px;
             border-radius: 10px;
             display: flex;
             flex-direction: row;
             gap: 10px;
             align-items: center;
-            flex: 2;
+            border: 1px solid var(--pink-main);
         }
 
         .config-section label {
             font-size: 13px;
             font-weight: bold;
             white-space: nowrap;
+            color: #d63384;
         }
 
         .config-section input, .config-section select {
@@ -61,6 +63,7 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 13px;
+            background: white;
         }
 
         /* 第二層：未分配名單區（中間橫向滾動） */
@@ -71,6 +74,7 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            z-index: 50;
         }
 
         #list-panel h3 {
@@ -81,12 +85,12 @@
 
         #guest-list-container {
             display: flex;
-            flex-flow: column wrap; /* 關鍵：讓內容先垂直排再水平換列 */
-            height: 130px; /* 固定高度約三行賓客卡片的高度 */
+            flex-flow: column wrap; /* 讓內容垂直排後再水平換列，形成三行 */
+            height: 125px; /* 固定高度容納三行 */
             overflow-x: auto; /* 支援左右拉動 */
             overflow-y: hidden;
             gap: 8px;
-            padding: 5px;
+            padding: 10px;
             border: 1px dashed var(--pink-main);
             border-radius: 10px;
             background: #fffdfd;
@@ -100,10 +104,10 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             cursor: move;
             font-size: 12px;
-            width: 120px; /* 固定寬度讓排列整齊 */
-            height: 32px; /* 固定高度確保剛好三行 */
+            width: 110px; 
+            height: 30px; 
             display: flex;
-            flex-direction: column;
+            align-items: center;
             justify-content: center;
             box-sizing: border-box;
             white-space: nowrap;
@@ -119,38 +123,38 @@
         #canvas {
             flex: 1;
             padding: 40px;
-            overflow: auto; /* 解決桌子顯示不全的問題 */
-            display: block; /* 改為 block 確保滾動容器生效 */
+            overflow: auto; 
+            display: block; 
         }
 
         #tables-stage {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: fit-content; /* 確保內容寬度不會被擠壓 */
+            min-width: fit-content; 
         }
 
         .row-container {
             display: flex;
             flex-direction: row;
             justify-content: center;
-            gap: 50px;
-            margin-bottom: 80px;
+            gap: 60px;
+            margin-bottom: 100px;
             min-width: 100%;
         }
 
         .table-wrap {
             position: relative;
-            width: 180px;
-            height: 180px;
-            flex-shrink: 0; /* 防止桌子被擠壓 */
+            width: 200px;
+            height: 200px;
+            flex-shrink: 0; 
         }
 
         .table-center {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             background: white;
-            border: 3px solid var(--pink-main);
+            border: 4px solid var(--pink-main);
             border-radius: 50%;
             position: absolute;
             top: 50%;
@@ -160,14 +164,14 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
             z-index: 2;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(255,179,193,0.3);
         }
 
         .seat {
-            width: 46px;
-            height: 46px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: white;
             border: 1px dashed var(--blue-main);
@@ -177,6 +181,7 @@
             justify-content: center;
             font-size: 10px;
             z-index: 3;
+            transition: background 0.2s;
         }
 
         .seat .guest-card {
@@ -188,22 +193,24 @@
             padding: 0;
             text-align: center;
             justify-content: center;
+            font-size: 11px;
         }
 
         /* 按鈕樣式 */
         .btn {
             cursor: pointer;
-            padding: 8px 15px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 15px;
+            border-radius: 20px;
             font-weight: bold;
             font-size: 12px;
-            transition: 0.2s;
+            transition: 0.3s;
             white-space: nowrap;
         }
         .btn-pink { background: var(--pink-main); color: white; }
         .btn-blue { background: var(--blue-main); color: white; }
-        .btn:hover { opacity: 0.8; }
+        .btn-grey { background: #eee; color: #777; }
+        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
 
     </style>
 </head>
@@ -211,32 +218,33 @@
 
 <div id="control-panel">
     <div class="config-section">
-        <label>佈局:</label>
+        <label>桌數分佈:</label>
         <input type="text" id="layout-config" value="2,3,3" style="width: 80px;" placeholder="2,3,3">
         <label>每桌人數:</label>
         <input type="number" id="per-table-limit" value="12" style="width: 50px;">
-        <button class="btn btn-pink" onclick="createTables()">更新佈局</button>
+        <button class="btn btn-pink" onclick="createTables()">更新桌位</button>
     </div>
 
-    <div class="config-section" style="background: #eef7ff; flex: 3;">
-        <label>新增:</label>
-        <input type="text" id="manual-name" placeholder="姓名" style="width: 100px;">
+    <div class="config-section" style="background: #eef7ff; border-color: var(--blue-main);">
+        <label>手動加入:</label>
+        <input type="text" id="manual-name" placeholder="賓客姓名" style="width: 100px;">
         <select id="manual-side">
-            <option value="男家">男家</option>
-            <option value="女家">女家</option>
+            <option value="男家">男家 (藍)</option>
+            <option value="女家">女家 (粉)</option>
         </select>
-        <button class="btn btn-blue" onclick="addManualGuest()">加入</button>
+        <button class="btn btn-blue" onclick="addManualGuest()">加入名單</button>
     </div>
 
-    <div class="config-section" style="flex: 2;">
-        <button class="btn btn-pink" onclick="downloadTemplate()">下載範本</button>
-        <button class="btn btn-blue" onclick="document.getElementById('excel-upload').click()">匯入 Excel</button>
+    <div class="config-section">
+        <label>數據操作:</label>
+        <button class="btn btn-grey" onclick="downloadTemplate()" style="margin-right:5px;">📥 下載範本</button>
+        <button class="btn btn-blue" onclick="document.getElementById('excel-upload').click()">📤 匯入 Excel</button>
         <input type="file" id="excel-upload" hidden accept=".xlsx, .xls" onchange="handleImport(this)">
     </div>
 </div>
 
 <div id="list-panel">
-    <h3>💕 未分配名單 (支援左右拉動)</h3>
+    <h3>💕 未分配賓客名單 (支援左右滑動)</h3>
     <div id="guest-list-container">
         </div>
 </div>
@@ -246,19 +254,20 @@
 </div>
 
 <script>
-    // 初始化未分配名單拖拽
+    // 初始化未分配名單拖拽功能
     new Sortable(document.getElementById('guest-list-container'), {
         group: 'wedding',
         animation: 150
     });
 
     /**
-     * 生成桌位畫布
+     * 功能：生成桌位佈局
      */
     function createTables() {
         const stage = document.getElementById('tables-stage');
         stage.innerHTML = ''; 
 
+        // 獲取設定值
         const layoutConfig = document.getElementById('layout-config').value;
         const layout = layoutConfig.split(',').map(function(item) {
             return parseInt(item.trim()) || 0;
@@ -266,6 +275,7 @@
 
         const seatCount = parseInt(document.getElementById('per-table-limit').value) || 12;
 
+        // 生成各行桌子
         layout.forEach(function(count, rowIndex) {
             if (count <= 0) return;
             
@@ -276,31 +286,36 @@
                 const tableWrap = document.createElement('div');
                 tableWrap.className = 'table-wrap'; 
                 
+                // 桌心標籤
                 const center = document.createElement('div');
                 center.className = 'table-center';
                 center.innerText = '第 ' + (rowIndex + 1) + '-' + i + ' 桌';
                 tableWrap.appendChild(center);
 
+                // 生成環繞座位
                 for (let j = 0; j < seatCount; j++) {
                     const seat = document.createElement('div');
                     seat.className = 'seat';
 
                     const angle = (j / seatCount) * 2 * Math.PI - Math.PI / 2;
-                    const radius = 75; 
+                    const radius = 80; // 座位離圓心距離
                     
-                    const x = 90 + radius * Math.cos(angle) - 23;
-                    const y = 90 + radius * Math.sin(angle) - 23;
+                    // 100 為 table-wrap 寬高的一半，24 為 seat 寬高的一半
+                    const x = 100 + radius * Math.cos(angle) - 24;
+                    const y = 100 + radius * Math.sin(angle) - 24;
                     
                     seat.style.left = x + 'px'; 
                     seat.style.top = y + 'px'; 
 
+                    // 座位拖拽邏輯
                     new Sortable(seat, {
                         group: 'wedding',
                         animation: 150,
                         onAdd: function(evt) {
+                            // 座位限坐一人，多出則退回名單
                             if (evt.to.children.length > 1) {
                                 document.getElementById('guest-list-container').appendChild(evt.item);
-                                alert('此位置已有賓客囉！'); 
+                                alert('這個位置已經坐人了喔！'); 
                             }
                         }
                     });
@@ -314,7 +329,7 @@
     }
 
     /**
-     * 手動新增
+     * 功能：手動新增賓客
      */
     function addManualGuest() {
         const nameInput = document.getElementById('manual-name');
@@ -322,26 +337,29 @@
         const name = nameInput.value; 
         const side = sideSelect.value; 
 
-        if (!name) { alert('請輸入姓名'); return; }
+        if (!name) { 
+            alert('請輸入賓客姓名'); 
+            return; 
+        }
 
         renderGuest(name, side, "朋友"); 
-        nameInput.value = ''; 
+        nameInput.value = ''; // 清空欄位
     }
 
     /**
-     * 渲染名單卡片
+     * 功能：將賓客資料渲染至未分配名單區
      */
     function renderGuest(name, side, role) {
         const card = document.createElement('div');
+        // 根據家方設定粉/藍樣式
         card.className = 'guest-card' + (side === '女家' ? ' female' : '');
-        // 橫向佈局下，卡片只顯示姓名以節省空間
         card.innerHTML = '<strong>' + name + '</strong>'; 
-        card.title = side + " | " + role; // 滑鼠懸停顯示詳細資訊
+        card.title = side + " | " + role; // 懸停提示
         document.getElementById('guest-list-container').appendChild(card); 
     }
 
     /**
-     * Excel 下載
+     * 功能：下載 Excel 範本
      */
     function downloadTemplate() {
         const data = [
@@ -356,7 +374,7 @@
     }
 
     /**
-     * Excel 匯入
+     * 功能：匯入 Excel 數據
      */
     function handleImport(input) {
         const file = input.files[0]; 
@@ -368,13 +386,14 @@
             const sheet = workbook.Sheets[workbook.SheetNames[0]]; 
             const json = XLSX.utils.sheet_to_json(sheet); 
             json.forEach(function(item) {
-                renderGuest(item['姓名'], item['男家/女家'], item['分類'] || '朋友'); 
+                renderGuest(item['姓名'] || '未知', item['男家/女家'] || '男家', item['分類'] || '朋友'); 
             });
         };
         reader.readAsArrayBuffer(file); 
+        input.value = ''; // 重置 file input
     }
 
-    // 啟動頁面時預設生成一次
+    // 初始化頁面
     window.onload = function() {
         createTables();
     };
