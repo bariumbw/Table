@@ -97,7 +97,7 @@
             height: 130px; 
             overflow-x: auto; 
             overflow-y: hidden;
-            gap: 8px;
+            gap: 10px;
             padding: 10px;
             border: 1px dashed var(--pink-main);
             border-radius: 10px;
@@ -110,17 +110,17 @@
             border-radius: 6px;
             background: white;
             border-left: 4px solid var(--blue-main);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
             cursor: move;
             font-size: 11px;
-            width: 110px; 
-            height: 38px; 
+            width: 115px; 
+            height: 40px; 
             display: flex;
             flex-direction: column; 
             align-items: center;
             justify-content: center;
             box-sizing: border-box;
-            position: relative; /* 為了放置刪除按鈕 */
+            position: relative;
         }
 
         .guest-card.female {
@@ -129,7 +129,7 @@
 
         .guest-card strong {
             display: block;
-            width: 80%;
+            width: 90%;
             text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -139,27 +139,25 @@
         .guest-card small {
             font-size: 9px;
             color: #888;
+            white-space: nowrap;
         }
 
-        /* 刪除按鈕樣式 */
         .del-btn {
             position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 16px;
-            height: 16px;
+            top: 1px;
+            right: 1px;
+            width: 14px;
+            height: 14px;
             background: #eee;
             color: #777;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 9px;
             cursor: pointer;
             border: none;
-            transition: 0.2s;
         }
-        .del-btn:hover { background: var(--danger); color: white; }
 
         /* 第三層：桌位畫布 */
         #canvas-wrapper {
@@ -179,7 +177,7 @@
 
         #canvas {
             flex: 1;
-            padding: 40px 10px 20px 10px;
+            padding: 50px 20px;
             overflow: auto; 
             display: block; 
             width: 100%;
@@ -197,23 +195,23 @@
             display: flex;
             flex-direction: row; 
             flex-wrap: nowrap;   
-            gap: 50px; 
-            margin-bottom: 80px;
-            padding: 0 20px;
+            gap: 80px; /* 增加桌與桌之間的間距，防止重疊 */
+            margin-bottom: 120px;
+            padding: 0 40px;
         }
 
         .table-wrap {
             position: relative;
-            width: 160px; 
-            height: 160px;
+            width: 200px; /* 增加容器大小 */
+            height: 200px;
             flex-shrink: 0; 
         }
 
         .table-center {
-            width: 75px;
-            height: 75px;
+            width: 80px;
+            height: 80px;
             background: white;
-            border: 3px solid var(--pink-main);
+            border: 4px solid var(--pink-main);
             border-radius: 50%;
             position: absolute;
             top: 50%; 
@@ -223,28 +221,43 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 11px;
-            z-index: 2;
-            box-shadow: 0 2px 5px rgba(255,179,193,0.3);
+            font-size: 12px;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(255,179,193,0.4);
             cursor: pointer;
             text-align: center;
         }
 
         .seat {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            width: 55px; /* 增加座位寬度以顯示完整資料 */
+            height: 45px; /* 增加座位高度 */
+            border-radius: 8px; /* 改為圓角矩形更適合顯示文字 */
             background: white;
             border: 1px dashed var(--blue-main);
             position: absolute;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 9px;
-            z-index: 3;
+            z-index: 5;
+            transition: all 0.2s;
         }
 
-        /* 彈出視窗 (Modal) 樣式 */
+        /* 修正：讓拉進去後的賓客卡片填滿座位並顯示資料 */
+        .seat .guest-card {
+            border: none;
+            box-shadow: none;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            padding: 0;
+            font-size: 10px;
+        }
+        
+        .seat .guest-card .del-btn {
+            display: none; /* 拉到桌位後隱藏刪除鈕防止誤觸 */
+        }
+
+        /* 彈出視窗 (Modal) */
         #modal-overlay {
             display: none;
             position: fixed;
@@ -263,7 +276,6 @@
             flex-direction: column;
             gap: 15px;
         }
-        .modal-content h4 { margin: 0; color: var(--pink-main); }
 
         .btn {
             cursor: pointer;
@@ -272,7 +284,6 @@
             border-radius: 15px;
             font-weight: bold;
             font-size: 12px;
-            transition: 0.3s;
         }
         .btn-pink { background: var(--pink-main); color: white; }
         .btn-blue { background: var(--blue-main); color: white; }
@@ -334,7 +345,7 @@
 </div>
 
 <div id="list-panel">
-    <h3>💕 名單 (點擊 × 刪除)</h3>
+    <h3>💕 名單 (請將賓客拖曳至下方座位)</h3>
     <div id="guest-list-container"></div>
 </div>
 
@@ -378,26 +389,23 @@
         const tableWrap = document.createElement('div');
         tableWrap.className = 'table-wrap';
         tableWrap.dataset.tableId = id;
-        tableWrap.dataset.seatCount = seatCount;
 
         const center = document.createElement('div');
         center.className = 'table-center';
         center.innerText = name;
-        
-        // 點擊桌子開啟同畫面編輯彈窗
-        center.onclick = function() {
-            openModal(tableWrap, name, seatCount);
-        };
-
+        center.onclick = function() { openModal(tableWrap, name, seatCount); };
         tableWrap.appendChild(center);
 
         for (let j = 0; j < seatCount; j++) {
             const seat = document.createElement('div');
             seat.className = 'seat';
             const angle = (j / seatCount) * 2 * Math.PI - Math.PI / 2;
-            const radius = 65; 
-            seat.style.left = (80 + radius * Math.cos(angle) - 20) + 'px'; 
-            seat.style.top = (80 + radius * Math.sin(angle) - 20) + 'px'; 
+            const radius = 85; // 增加半徑，讓座位離桌心遠一點點，減少擁擠感
+            // 200/2=100 (容器中心), 55/2=27.5 (座位寬半), 45/2=22.5 (座位高半)
+            const x = 100 + radius * Math.cos(angle) - 27.5;
+            const y = 100 + radius * Math.sin(angle) - 22.5;
+            seat.style.left = x + 'px'; 
+            seat.style.top = y + 'px'; 
 
             new Sortable(seat, {
                 group: 'wedding',
@@ -405,7 +413,7 @@
                 onAdd: (evt) => {
                     if (evt.to.children.length > 1) {
                         document.getElementById('guest-list-container').appendChild(evt.item);
-                        alert('已有人位！'); 
+                        alert('此座位已滿！'); 
                     }
                 }
             });
@@ -414,7 +422,6 @@
         return tableWrap;
     }
 
-    // Modal 控制
     function openModal(tableWrap, name, count) {
         currentEditingTable = tableWrap;
         document.getElementById('edit-table-name').value = name;
@@ -422,23 +429,17 @@
         document.getElementById('modal-overlay').style.display = 'flex';
     }
 
-    function closeModal() {
-        document.getElementById('modal-overlay').style.display = 'none';
-    }
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 
     document.getElementById('confirm-edit-btn').onclick = function() {
         if (!currentEditingTable) return;
         const newName = document.getElementById('edit-table-name').value;
         const newCount = parseInt(document.getElementById('edit-table-seats').value) || 12;
-        
         const newWrap = renderSingleTable(currentEditingTable.dataset.tableId, newName, newCount);
         currentEditingTable.parentNode.replaceChild(newWrap, currentEditingTable);
         closeModal();
     };
 
-    /**
-     * 渲染賓客並加入刪除功能
-     */
     function renderGuest(name, side, role) {
         const card = document.createElement('div');
         card.className = 'guest-card' + (side === '女家' ? ' female' : '');
@@ -451,30 +452,25 @@
     }
 
     function deleteGuest(btn, name) {
-        if (confirm(`確定要刪除賓客「${name}」嗎？`)) {
-            const card = btn.parentElement;
-            card.remove();
-        }
+        if (confirm(`確定要刪除賓客「${name}」嗎？`)) { btn.parentElement.remove(); }
     }
 
     function exportSeatingToExcel() {
         const allTables = document.querySelectorAll('.table-wrap');
         const exportData = [];
         const tablesPerGroup = 5;
-        
         for (let i = 0; i < allTables.length; i += tablesPerGroup) {
             const group = Array.from(allTables).slice(i, i + tablesPerGroup);
             const titleRow = [];
             group.forEach(table => { titleRow.push(table.querySelector('.table-center').innerText); titleRow.push(""); });
             exportData.push(titleRow);
-
             const guestsInGroup = group.map(table => {
                 return Array.from(table.querySelectorAll('.seat')).map(s => {
                     const n = s.querySelector('.guest-card strong');
-                    return n ? n.innerText : "(空位)";
+                    const info = s.querySelector('.guest-card small');
+                    return n ? `${n.innerText} (${info.innerText})` : "(空位)";
                 });
             });
-
             const maxSeats = Math.max(...guestsInGroup.map(g => g.length));
             for (let r = 0; r < maxSeats; r++) {
                 const row = [];
@@ -483,7 +479,6 @@
             }
             exportData.push([]); exportData.push([]);
         }
-
         const ws = XLSX.utils.aoa_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "座位表");
