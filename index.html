@@ -27,7 +27,7 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* 第一層：功能操作區 (垂直三行獨立) */
+        /* 第一層：功能操作區 */
         #control-panel {
             width: 100%;
             background: white;
@@ -71,7 +71,7 @@
             min-width: 60px;
         }
 
-        /* 第二層：未分配名單區 (橫向三行滾動) */
+        /* 第二層：未分配名單區 */
         #list-panel {
             background: #fff;
             padding: 8px 10px;
@@ -93,7 +93,7 @@
         #guest-list-container {
             display: flex;
             flex-flow: column wrap; 
-            height: 120px; /* 稍微增加高度以容納分類文字 */
+            height: 120px; 
             overflow-x: auto; 
             overflow-y: hidden;
             gap: 6px;
@@ -113,9 +113,9 @@
             cursor: move;
             font-size: 11px;
             width: 100px; 
-            height: 34px; /* 增加高度以容納兩行文字 */
+            height: 34px; 
             display: flex;
-            flex-direction: column; /* 讓姓名與分類垂直排列 */
+            flex-direction: column; 
             align-items: center;
             justify-content: center;
             box-sizing: border-box;
@@ -134,10 +134,26 @@
             transform: scale(0.9);
         }
 
-        /* 第三層：桌位畫布 (橫向不換行滾動) */
+        /* 第三層：桌位畫布 */
+        #canvas-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 匯出按鈕放置於畫布右上方 */
+        #export-btn-container {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            z-index: 1000;
+        }
+
         #canvas {
             flex: 1;
-            padding: 20px 10px;
+            padding: 40px 10px 20px 10px;
             overflow: auto; 
             display: block; 
             width: 100%;
@@ -184,6 +200,14 @@
             font-size: 11px;
             z-index: 2;
             box-shadow: 0 2px 5px rgba(255,179,193,0.3);
+            cursor: pointer; /* 提示可以點擊 */
+            text-align: center;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .table-center:hover {
+            background: #fff0f3;
         }
 
         .seat {
@@ -225,6 +249,7 @@
         .btn-pink { background: var(--pink-main); color: white; }
         .btn-blue { background: var(--blue-main); color: white; }
         .btn-grey { background: #eee; color: #777; }
+        .btn-export { background: #4a90e2; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
     </style>
 </head>
@@ -267,8 +292,13 @@
     <div id="guest-list-container"></div>
 </div>
 
-<div id="canvas">
-    <div id="tables-stage"></div>
+<div id="canvas-wrapper">
+    <div id="export-btn-container">
+        <button class="btn btn-export" onclick="exportSeatingToExcel()">📊 匯出桌位表</button>
+    </div>
+    <div id="canvas">
+        <div id="tables-stage"></div>
+    </div>
 </div>
 
 <script>
@@ -281,7 +311,7 @@
     });
 
     /**
-     * 生成桌位
+     * 生成桌位 (修正：加入點擊編輯功能)
      */
     function createTables() {
         const stage = document.getElementById('tables-stage');
@@ -289,42 +319,15 @@
 
         const layoutConfig = document.getElementById('layout-config').value;
         const layout = layoutConfig.split(',').map(item => parseInt(item.trim()) || 0);
-        const seatCount = parseInt(document.getElementById('per-table-limit').value) || 12;
+        const defaultSeatCount = parseInt(document.getElementById('per-table-limit').value) || 12;
 
         layout.forEach((count, rowIndex) => {
             if (count <= 0) return;
             const rowDiv = document.createElement('div');
             rowDiv.className = 'row-container';
             for (let i = 1; i <= count; i++) {
-                const tableWrap = document.createElement('div');
-                tableWrap.className = 'table-wrap'; 
-                const center = document.createElement('div');
-                center.className = 'table-center';
-                center.innerText = (rowIndex + 1) + '-' + i;
-                tableWrap.appendChild(center);
-
-                for (let j = 0; j < seatCount; j++) {
-                    const seat = document.createElement('div');
-                    seat.className = 'seat';
-                    const angle = (j / seatCount) * 2 * Math.PI - Math.PI / 2;
-                    const radius = 65; 
-                    const x = 80 + radius * Math.cos(angle) - 20;
-                    const y = 80 + radius * Math.sin(angle) - 20;
-                    seat.style.left = x + 'px'; 
-                    seat.style.top = y + 'px'; 
-
-                    new Sortable(seat, {
-                        group: 'wedding',
-                        animation: 150,
-                        onAdd: (evt) => {
-                            if (evt.to.children.length > 1) {
-                                document.getElementById('guest-list-container').appendChild(evt.item);
-                                alert('已有人位！'); 
-                            }
-                        }
-                    });
-                    tableWrap.appendChild(seat); 
-                }
+                const tableId = `T-${rowIndex + 1}-${i}`;
+                const tableWrap = renderSingleTable(tableId, `第 ${rowIndex + 1}-${i} 桌`, defaultSeatCount);
                 rowDiv.appendChild(tableWrap); 
             }
             stage.appendChild(rowDiv); 
@@ -332,8 +335,110 @@
     }
 
     /**
-     * 手動新增
+     * 渲染單張桌子邏輯 (抽離以便後續修改)
      */
+    function renderSingleTable(id, name, seatCount) {
+        const tableWrap = document.createElement('div');
+        tableWrap.className = 'table-wrap';
+        tableWrap.dataset.tableId = id;
+
+        const center = document.createElement('div');
+        center.className = 'table-center';
+        center.innerText = name;
+        
+        // 點擊桌子編輯桌號與人數
+        center.onclick = function() {
+            const newName = prompt("請輸入新的桌號名稱:", center.innerText);
+            const newCount = prompt("請輸入此桌座位人數:", seatCount);
+            if (newName !== null && newCount !== null) {
+                const newWrap = renderSingleTable(id, newName, parseInt(newCount) || seatCount);
+                tableWrap.parentNode.replaceChild(newWrap, tableWrap);
+            }
+        };
+
+        tableWrap.appendChild(center);
+
+        for (let j = 0; j < seatCount; j++) {
+            const seat = document.createElement('div');
+            seat.className = 'seat';
+            const angle = (j / seatCount) * 2 * Math.PI - Math.PI / 2;
+            const radius = 65; 
+            const x = 80 + radius * Math.cos(angle) - 20;
+            const y = 80 + radius * Math.sin(angle) - 20;
+            seat.style.left = x + 'px'; 
+            seat.style.top = y + 'px'; 
+
+            new Sortable(seat, {
+                group: 'wedding',
+                animation: 150,
+                onAdd: (evt) => {
+                    if (evt.to.children.length > 1) {
+                        document.getElementById('guest-list-container').appendChild(evt.item);
+                        alert('已有人位！'); 
+                    }
+                }
+            });
+            tableWrap.appendChild(seat); 
+        }
+        return tableWrap;
+    }
+
+    /**
+     * 匯出 Excel：每 5 桌一組橫向排列
+     */
+    function exportSeatingToExcel() {
+        const allTables = document.querySelectorAll('.table-wrap');
+        if (allTables.length === 0) { alert("尚未建立桌位！"); return; }
+
+        const exportData = [];
+        const tablesPerGroup = 5;
+        
+        // 遍歷所有桌子，每 5 個一組
+        for (let i = 0; i < allTables.length; i += tablesPerGroup) {
+            const group = Array.from(allTables).slice(i, i + tablesPerGroup);
+            
+            // 加入桌號標題行
+            const titleRow = [];
+            group.forEach(table => {
+                titleRow.push(table.querySelector('.table-center').innerText);
+                titleRow.push(""); // 預留空列隔開
+            });
+            exportData.push(titleRow);
+
+            // 收集這組桌子中，各桌的所有賓客
+            const guestsInGroup = group.map(table => {
+                const seats = table.querySelectorAll('.seat');
+                const names = [];
+                seats.forEach(seat => {
+                    const card = seat.querySelector('.guest-card strong');
+                    names.push(card ? card.innerText : "(空位)");
+                });
+                return names;
+            });
+
+            // 找出這組中座位最多的桌子數量，決定列數
+            const maxSeats = Math.max(...guestsInGroup.map(g => g.length));
+
+            for (let rowIndex = 0; rowIndex < maxSeats; rowIndex++) {
+                const row = [];
+                guestsInGroup.forEach(guestList => {
+                    row.push(guestList[rowIndex] || ""); // 填入賓客名，若無則空
+                    row.push(""); // 間隔空列
+                });
+                exportData.push(row);
+            }
+            
+            // 組與組之間加入空行
+            exportData.push([]);
+            exportData.push([]);
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "婚禮座位表");
+        XLSX.writeFile(wb, "Wedding_Seating_Plan.xlsx");
+    }
+
     function addManualGuest() {
         const nameInput = document.getElementById('manual-name');
         const sideSelect = document.getElementById('manual-side');
@@ -346,20 +451,13 @@
         nameInput.value = ''; 
     }
 
-    /**
-     * 渲染賓客標籤 (包含姓名、家方、分類)
-     */
     function renderGuest(name, side, role) {
         const card = document.createElement('div');
         card.className = 'guest-card' + (side === '女家' ? ' female' : '');
-        // 核心修改：同時顯示姓名與分類
         card.innerHTML = `<strong>${name}</strong><small>${side} | ${role}</small>`; 
         document.getElementById('guest-list-container').appendChild(card); 
     }
 
-    /**
-     * Excel 範本
-     */
     function downloadTemplate() {
         const data = [["姓名", "男家/女家", "分類"], ["範例賓客", "男家", "親戚"]];
         const ws = XLSX.utils.aoa_to_sheet(data); 
@@ -368,9 +466,6 @@
         XLSX.writeFile(wb, "婚禮名單範本.xlsx"); 
     }
 
-    /**
-     * Excel 匯入
-     */
     function handleImport(input) {
         const file = input.files[0]; 
         if (!file) return;
