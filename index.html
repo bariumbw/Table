@@ -19,18 +19,18 @@
             background-color: var(--pink-bg);
             margin: 0; 
             display: flex; 
-            flex-direction: column; /* 改為垂直排列 */
+            flex-direction: column; 
             height: 100vh; 
             color: var(--text-dark);
         }
 
-        /* 上方控制區域（包含原側欄內容） */
+        /* 上方控制區域 */
         #top-panel {
             width: 100%; 
             background: white; 
-            border-bottom: 2px solid var(--pink-main); /* 改為底邊框 */
+            border-bottom: 2px solid var(--pink-main); 
             display: flex; 
-            flex-direction: row; /* 控制項橫向排列 */
+            flex-direction: row; 
             padding: 20px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             box-sizing: border-box;
@@ -42,6 +42,7 @@
             text-align: center; 
             margin: 0 0 10px 0; 
             font-size: 1.2rem;
+            min-width: 120px;
         }
 
         .config-group {
@@ -56,6 +57,8 @@
             padding: 12px; 
             border-radius: 12px; 
             font-size: 13px; 
+            height: 100%;
+            box-sizing: border-box;
         }
 
         .config-box label {
@@ -99,26 +102,41 @@
             transform: scale(1.02); 
         }
 
-        /* 賓客名單容器：改為橫向滾動或固定高度 */
+        /* 關鍵修改：賓客名單容器改為橫向三行顯示 */
+        #guest-list-wrapper {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            min-width: 400px;
+        }
+
         #guest-list-container {
-            width: 300px;
-            height: 150px;
+            flex: 1;
+            display: flex;
+            flex-direction: row; /* 橫向排列 */
+            flex-wrap: wrap;    /* 自動折行 */
+            align-content: flex-start;
+            gap: 8px;
             overflow-y: auto; 
             border: 2px dashed var(--pink-main);
             border-radius: 15px; 
             padding: 10px; 
             background: #fff;
+            height: 120px; /* 固定高度以容納約三行 */
         }
 
         .guest-card {
-            padding: 8px;
-            margin-bottom: 5px; 
+            padding: 8px 12px;
             border-radius: 6px;
             background: white; 
             border-left: 6px solid var(--blue-main);
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
             cursor: move; 
             font-size: 12px;
+            white-space: nowrap; /* 文字不換行 */
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
         }
 
         .guest-card.female { 
@@ -166,8 +184,8 @@
         }
 
         .seat {
-            width: 45px;
-            height: 45px; 
+            width: 50px;
+            height: 50px; 
             border-radius: 50%; 
             background: white;
             border: 1px dashed var(--blue-main); 
@@ -183,18 +201,20 @@
             border: none; 
             box-shadow: none; 
             margin: 0;
-            padding: 5px; 
+            padding: 2px; 
             width: 100%; 
-            text-align: center; 
+            text-align: center;
+            min-width: unset;
         }
     </style>
 </head>
 <body>
 
 <div id="top-panel">
-    <div style="display: flex; flex-direction: column; min-width: 150px;">
-        <h2>💕 排座助手</h2>
-        <div id="guest-list-container"></div>
+    <div id="guest-list-wrapper">
+        <h2>💕 未分配名單</h2>
+        <div id="guest-list-container">
+            </div>
     </div>
     
     <div class="config-group">
@@ -248,53 +268,43 @@
         const stage = document.getElementById('tables-stage');
         stage.innerHTML = ''; // 清空目前的內容
 
-        // 讀取桌數配置 (如: 2,3,3) 並轉換為數字陣列
         const layoutConfig = document.getElementById('layout-config').value;
         const layout = layoutConfig.split(',').map(function(item) {
             return parseInt(item.trim());
         });
 
-        // 讀取每桌人數
         const seatCount = parseInt(document.getElementById('per-table-limit').value);
 
-        // 遍歷每一行
         layout.forEach(function(count, rowIndex) {
             const rowDiv = document.createElement('div');
             rowDiv.className = 'row-container';
             
-            // 在每一行中生成指定數量的桌子
             for (let i = 1; i <= count; i++) {
                 const tableWrap = document.createElement('div');
                 tableWrap.className = 'table-wrap'; 
                 
-                // 創建桌子中心文字
                 const center = document.createElement('div');
                 center.className = 'table-center';
                 center.innerText = '第 ' + (rowIndex + 1) + '-' + i + ' 桌';
                 tableWrap.appendChild(center);
 
-                // 根據人數生成環繞的座位
                 for (let j = 0; j < seatCount; j++) {
                     const seat = document.createElement('div');
                     seat.className = 'seat';
 
-                    // 計算圓形排列的座標 (三角函數)
                     const angle = (j / seatCount) * 2 * Math.PI - Math.PI / 2;
-                    const radius = 75; // 座位距離圓心的距離
+                    const radius = 75; 
                     
-                    // 90 是 table-wrap 寬高的一半，22.5 是座位寬高的一半
-                    const x = 90 + radius * Math.cos(angle) - 22.5;
-                    const y = 90 + radius * Math.sin(angle) - 22.5;
+                    const x = 90 + radius * Math.cos(angle) - 25;
+                    const y = 90 + radius * Math.sin(angle) - 25;
                     
                     seat.style.left = x + 'px'; 
                     seat.style.top = y + 'px'; 
 
-                    // 為每個座位初始化拖放功能
                     new Sortable(seat, {
                         group: 'wedding',
                         animation: 150,
                         onAdd: function(evt) {
-                            // 如果座位上已經有賓客，則將新來的賓客彈回名單
                             if (evt.to.children.length > 1) {
                                 document.getElementById('guest-list-container').appendChild(evt.item);
                                 alert('這個位置已經有人坐囉！'); 
@@ -326,7 +336,7 @@
         }
 
         renderGuest(name, side, "朋友"); 
-        nameInput.value = ''; // 清空輸入框
+        nameInput.value = ''; 
     }
 
     /**
@@ -334,10 +344,10 @@
      */
     function renderGuest(name, side, role) {
         const card = document.createElement('div');
-        // 根據家方設定樣式類別
         card.className = 'guest-card' + (side === '女家' ? ' female' : '');
         
-        card.innerHTML = '<strong>' + name + '</strong><br><small>' + side + ' | ' + role + '</small>'; 
+        // 橫向顯示時，簡化顯示內容以便排成三行
+        card.innerHTML = '<strong>' + name + '</strong><br><small>' + side + '</small>'; 
         document.getElementById('guest-list-container').appendChild(card); 
     }
 
@@ -370,7 +380,6 @@
             const sheet = workbook.Sheets[workbook.SheetNames[0]]; 
             const json = XLSX.utils.sheet_to_json(sheet); 
             
-            // 遍歷 Excel 內容並生成賓客標籤
             json.forEach(function(item) {
                 renderGuest(item['姓名'], item['男家/女家'], item['分類'] || '朋友'); 
             });
@@ -378,7 +387,6 @@
         reader.readAsArrayBuffer(file); 
     }
 
-    // 初始化時自動生成一次桌位
     window.onload = function() {
         createTables();
     };
