@@ -189,7 +189,7 @@
             display: flex;
             flex-direction: row; 
             flex-wrap: nowrap;   
-            gap: 35px; /* 修正核心：桌與桌之間貼近，保留約一個座位距離 */
+            gap: 35px; 
             margin-bottom: 90px;
             padding: 0 30px;
         }
@@ -310,7 +310,8 @@
         <input type="text" id="layout-config" value="2,3,3">
         <label>人數:</label>
         <input type="number" id="per-table-limit" value="12">
-        <button class="btn btn-pink" onclick="createTables()">套用</button>
+        <button class="btn btn-pink" onclick="handleCreateTables()">套用</button>
+        <button class="btn btn-grey" onclick="clearAllStorage()" style="font-size:9px;">清空記錄</button>
     </div>
     <div class="config-section" style="background: #eef7ff; border-color: var(--blue-main);">
         <label>2. 新增:</label>
@@ -351,12 +352,117 @@
 <script>
     let currentEditingTable = null;
 
+    // 初始化 Sortable (名單容器)
     new Sortable(document.getElementById('guest-list-container'), {
         group: 'wedding',
         animation: 150,
         delay: 50,
-        touchStartThreshold: 5
+        touchStartThreshold: 5,
+        onEnd: saveAllData // 每次拖拽結束保存數據
     });
+
+    // --- 核心功能：保存與載入數據 ---
+
+    function saveAllData() {
+        const data = {
+            layout: document.getElementById('layout-config').value,
+            perLimit: document.getElementById('per-table-limit').value,
+            unassigned: [],
+            assigned: {} // { tableId_seatIndex: guestData }
+        };
+
+        // 保存未分配名單
+        document.querySelectorAll('#guest-list-container .guest-card').forEach(card => {
+            data.unassigned.push(getGuestDataFromCard(card));
+        });
+
+        // 保存已分配座位
+        document.querySelectorAll('.table-wrap').forEach(table => {
+            const tableId = table.dataset.tableId;
+            const tableName = table.querySelector('.table-center').innerText;
+            const seatCount = table.querySelectorAll('.seat').length;
+            
+            // 儲存桌子的動態資訊（如果被修改過）
+            if(!data.tableInfo) data.tableInfo = {};
+            data.tableInfo[tableId] = { name: tableName, count: seatCount };
+
+            table.querySelectorAll('.seat').forEach((seat, index) => {
+                const card = seat.querySelector('.guest-card');
+                if (card) {
+                    data.assigned[`${tableId}_${index}`] = getGuestDataFromCard(card);
+                }
+            });
+        });
+
+        localStorage.setItem('wedding_seating_db', JSON.stringify(data));
+    }
+
+    function getGuestDataFromCard(card) {
+        return {
+            name: card.querySelector('strong').innerText,
+            side: card.classList.contains('female') ? '女家' : '男家',
+            role: card.querySelector('small').innerText.split('|')[1] || '朋友'
+        };
+    }
+
+    function loadSavedData() {
+        const raw = localStorage.getItem('wedding_seating_db');
+        if (!raw) {
+            createTables(); // 無記錄則建立預設
+            return;
+        }
+        const data = JSON.parse(raw);
+        document.getElementById('layout-config').value = data.layout;
+        document.getElementById('per-table-limit').value = data.perLimit;
+
+        // 重新建立桌子
+        const stage = document.getElementById('tables-stage');
+        stage.innerHTML = '';
+        const layout = data.layout.split(',').map(item => parseInt(item.trim()) || 0);
+        
+        layout.forEach((count, rowIndex) => {
+            if (count <= 0) return;
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'row-container';
+            for (let i = 1; i <= count; i++) {
+                const tId = `T-${rowIndex + 1}-${i}`;
+                const tInfo = (data.tableInfo && data.tableInfo[tId]) ? data.tableInfo[tId] : { name: `第 ${rowIndex + 1}-${i} 桌`, count: parseInt(data.perLimit) };
+                rowDiv.appendChild(renderSingleTable(tId, tInfo.name, tInfo.count)); 
+            }
+            stage.appendChild(rowDiv); 
+        });
+
+        // 恢復未分配賓客
+        data.unassigned.forEach(g => renderGuest(g.name, g.side, g.role));
+
+        // 恢復已分配賓客
+        for (const key in data.assigned) {
+            const [tId, sIdx] = key.split('_');
+            const guest = data.assigned[key];
+            const table = document.querySelector(`[data-table-id="${tId}"]`);
+            if (table) {
+                const seats = table.querySelectorAll('.seat');
+                if (seats[sIdx]) {
+                    const card = createGuestCard(guest.name, guest.side, guest.role);
+                    seats[sIdx].appendChild(card);
+                }
+            }
+        }
+    }
+
+    function clearAllStorage() {
+        if(confirm("確定要清空所有記錄並重置嗎？")) {
+            localStorage.removeItem('wedding_seating_db');
+            location.reload();
+        }
+    }
+
+    // --- 原有邏輯修正與適配 ---
+
+    function handleCreateTables() {
+        createTables();
+        saveAllData();
+    }
 
     function createTables() {
         const stage = document.getElementById('tables-stage');
@@ -404,11 +510,32 @@
                         document.getElementById('guest-list-container').appendChild(evt.item);
                         alert('座位已滿！'); 
                     }
-                }
+                    saveAllData();
+                },
+                onRemove: saveAllData
             });
             tableWrap.appendChild(seat); 
         }
         return tableWrap;
+    }
+
+    function createGuestCard(name, side, role) {
+        const card = document.createElement('div');
+        card.className = 'guest-card' + (side === '女家' ? ' female' : '');
+        card.innerHTML = `<button class="del-btn" onclick="deleteGuest(this, '${name}')">×</button><strong>${name}</strong><small>${side}|${role}</small>`; 
+        return card;
+    }
+
+    function renderGuest(name, side, role) {
+        const card = createGuestCard(name, side, role);
+        document.getElementById('guest-list-container').appendChild(card); 
+    }
+
+    function deleteGuest(btn, name) {
+        if (confirm(`確定要刪除賓客「${name}」嗎？`)) { 
+            btn.parentElement.remove(); 
+            saveAllData();
+        }
     }
 
     function openModal(tableWrap, name, count) {
@@ -427,18 +554,8 @@
         const newWrap = renderSingleTable(currentEditingTable.dataset.tableId, newName, newCount);
         currentEditingTable.parentNode.replaceChild(newWrap, currentEditingTable);
         closeModal();
+        saveAllData();
     };
-
-    function renderGuest(name, side, role) {
-        const card = document.createElement('div');
-        card.className = 'guest-card' + (side === '女家' ? ' female' : '');
-        card.innerHTML = `<button class="del-btn" onclick="deleteGuest(this, '${name}')">×</button><strong>${name}</strong><small>${side}|${role}</small>`; 
-        document.getElementById('guest-list-container').appendChild(card); 
-    }
-
-    function deleteGuest(btn, name) {
-        if (confirm(`確定要刪除賓客「${name}」嗎？`)) { btn.parentElement.remove(); }
-    }
 
     function exportSeatingToExcel() {
         const allTables = document.querySelectorAll('.table-wrap');
@@ -475,6 +592,7 @@
         if (!n.value) return;
         renderGuest(n.value, document.getElementById('manual-side').value, document.getElementById('manual-role').value); 
         n.value = ''; 
+        saveAllData();
     }
 
     function downloadTemplate() {
@@ -491,12 +609,14 @@
         reader.onload = (e) => {
             const json = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), {type: 'array'}).Sheets[XLSX.read(new Uint8Array(e.target.result), {type: 'array'}).SheetNames[0]]);
             json.forEach(item => renderGuest(item['姓名'], item['男家/女家'], item['分類'] || '朋友'));
+            saveAllData();
         };
         reader.readAsArrayBuffer(file);
         input.value = '';
     }
 
-    window.onload = () => createTables();
+    // 初始化加載
+    window.onload = loadSavedData;
 </script>
 
 </body>
