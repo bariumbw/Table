@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>夢幻婚禮排座小幫手 (跨裝置優化版)</title>
+    <title>夢幻婚禮排座小幫手 (最終修正版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -11,11 +11,10 @@
             --pink-bg: #fff5f7;
             --pink-main: #ffb3c1;
             --blue-main: #a2d2ff;
-            --text-dark: #000000;
+            --text-dark: #000000; /* 強制全域文字基礎色為黑 */
             --danger: #ff4d4f;
         }
 
-        /* 基礎排版優化 */
         body {
             font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
             background-color: var(--pink-bg);
@@ -30,7 +29,7 @@
             touch-action: manipulation;
         }
 
-        /* 第一層：功能操作區 */
+        /* 功能控制區 */
         #control-panel {
             width: 100%;
             background: white;
@@ -71,10 +70,10 @@
             font-size: 12px;
             background: white;
             min-width: 60px;
-            color: #000;
+            color: #000000;
         }
 
-        /* 第二層：名單區 */
+        /* 賓客名單區 */
         #list-panel {
             background: #fff;
             padding: 8px 12px;
@@ -109,7 +108,7 @@
             scrollbar-color: var(--pink-main) transparent;
         }
 
-        /* 賓客卡片 - 純黑文字 */
+        /* 賓客卡片 - 強制黑色字體 */
         .guest-card {
             padding: 4px 8px;
             border-radius: 8px;
@@ -126,11 +125,10 @@
             justify-content: center;
             box-sizing: border-box;
             position: relative;
-            color: #000000;
+            color: #000000 !important; /* 強制黑字 */
             user-select: none;
         }
 
-        .guest-card:active { cursor: grabbing; }
         .guest-card.female { border-left-color: var(--pink-main); }
 
         .guest-card strong {
@@ -140,13 +138,13 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            color: #000000;
+            color: #000000 !important; /* 姓名黑字 */
         }
 
         .guest-card small { 
             font-size: 9px; 
-            color: #000000;
-            font-weight: 600;
+            color: #000000 !important; /* 家方/分類黑字 */
+            font-weight: bold;
         }
 
         .del-btn {
@@ -167,7 +165,7 @@
             z-index: 2;
         }
 
-        /* 第三層：桌位畫布 - 修正電腦版顯示問題 */
+        /* 畫布區 - 修正電腦版顯示 */
         #canvas-wrapper {
             flex: 1;
             position: relative;
@@ -193,10 +191,10 @@
             box-sizing: border-box;
         }
 
-        /* 修正電腦版桌位顯示的核心 CSS */
+        /* 重要：電腦版佈局修復 */
         #tables-stage {
-            display: block; /* 修正：將 inline-flex 改為 block 確保電腦版內容不縮塌 */
-            width: max-content; 
+            display: block; /* 避免 inline-flex 在電腦版導致的寬度坍縮 */
+            width: fit-content; 
             min-width: 100%;
         }
 
@@ -204,10 +202,10 @@
             display: flex;
             flex-direction: row; 
             flex-wrap: nowrap;   
-            gap: 35px; 
+            gap: 40px; 
             margin-bottom: 100px;
             padding: 0 40px;
-            width: max-content; /* 確保行容器能根據內容橫向伸展 */
+            width: fit-content; /* 確保行容器隨內容延伸 */
         }
 
         .table-wrap {
@@ -309,13 +307,13 @@
         <h4 style="margin:0; color:#d63384;">修改桌位設定</h4>
         <div>
             <label style="font-size: 12px; font-weight:bold;">桌號名稱：</label>
-            <input type="text" id="edit-table-name" style="width: 100%; margin-top:5px; padding:8px;">
+            <input type="text" id="edit-table-name" style="width: 100%; margin-top:5px; padding:8px; color: #000;">
         </div>
         <div>
             <label style="font-size: 12px; font-weight:bold;">座位人數：</label>
-            <input type="number" id="edit-table-seats" style="width: 100%; margin-top:5px; padding:8px;">
+            <input type="number" id="edit-table-seats" style="width: 100%; margin-top:5px; padding:8px; color: #000;">
         </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top:10px;">
             <button class="btn btn-grey" onclick="closeModal()">取消</button>
             <button class="btn btn-pink" id="confirm-edit-btn">確定更新</button>
         </div>
@@ -370,6 +368,7 @@
 <script>
     let currentEditingTable = null;
 
+    // 跨裝置 Sortable 設定
     const sortableOptions = {
         group: 'wedding',
         animation: 150,
@@ -379,6 +378,8 @@
     };
 
     new Sortable(document.getElementById('guest-list-container'), sortableOptions);
+
+    // --- 數據持久化 ---
 
     function saveAllData() {
         const data = {
@@ -393,13 +394,16 @@
         });
         document.querySelectorAll('.table-wrap').forEach(table => {
             const tableId = table.dataset.tableId;
-            data.tableInfo[tableId] = { name: table.querySelector('.table-center').innerText, count: table.querySelectorAll('.seat').length };
+            data.tableInfo[tableId] = { 
+                name: table.querySelector('.table-center').innerText, 
+                count: table.querySelectorAll('.seat').length 
+            };
             table.querySelectorAll('.seat').forEach((seat, index) => {
                 const card = seat.querySelector('.guest-card');
                 if (card) data.assigned[`${tableId}_${index}`] = getGuestDataFromCard(card);
             });
         });
-        localStorage.setItem('wedding_db_final_v4', JSON.stringify(data));
+        localStorage.setItem('wedding_db_pc_fixed_v5', JSON.stringify(data));
     }
 
     function getGuestDataFromCard(card) {
@@ -411,14 +415,16 @@
     }
 
     function loadSavedData() {
-        const raw = localStorage.getItem('wedding_db_final_v4');
+        const raw = localStorage.getItem('wedding_db_pc_fixed_v5');
         if (!raw) { createTables(); return; }
         const data = JSON.parse(raw);
         document.getElementById('layout-config').value = data.layout;
         document.getElementById('per-table-limit').value = data.perLimit;
+        
         const stage = document.getElementById('tables-stage');
         stage.innerHTML = '';
         const layout = data.layout.split(',').map(item => parseInt(item.trim()) || 0);
+        
         layout.forEach((count, rowIndex) => {
             if (count <= 0) return;
             const rowDiv = document.createElement('div');
@@ -430,6 +436,7 @@
             }
             stage.appendChild(rowDiv); 
         });
+
         data.unassigned.forEach(g => renderGuest(g.name, g.side, g.role));
         for (const key in data.assigned) {
             const [tId, sIdx] = key.split('_');
@@ -443,10 +450,12 @@
 
     function clearAllStorage() {
         if(confirm("確定重置所有排座記錄嗎？")) {
-            localStorage.removeItem('wedding_db_final_v4');
+            localStorage.removeItem('wedding_db_pc_fixed_v5');
             location.reload();
         }
     }
+
+    // --- 桌位與賓客 ---
 
     function handleCreateTables() {
         if(confirm("套用佈局會重置桌子安排，確定嗎？")) { createTables(); saveAllData(); }
@@ -485,7 +494,10 @@
             const y = 130 + 100 * Math.sin(angle) - 29; 
             seat.style.left = x + 'px'; seat.style.top = y + 'px'; 
             new Sortable(seat, { ...sortableOptions, onAdd: (evt) => {
-                if (evt.to.children.length > 1) { document.getElementById('guest-list-container').appendChild(evt.item); alert('座位已滿！'); }
+                if (evt.to.children.length > 1) { 
+                    document.getElementById('guest-list-container').appendChild(evt.item); 
+                    alert('座位已滿！'); 
+                }
                 saveAllData();
             }});
             tableWrap.appendChild(seat); 
@@ -496,6 +508,7 @@
     function createGuestCard(name, side, role) {
         const card = document.createElement('div');
         card.className = 'guest-card' + (side === '女家' ? ' female' : '');
+        // 內嵌 HTML 確保文字純黑
         card.innerHTML = `<button class="del-btn" onclick="deleteGuest(this, '${name}')">×</button><strong>${name}</strong><small>${side}|${role}</small>`; 
         return card;
     }
@@ -531,6 +544,7 @@
         closeModal(); saveAllData();
     };
 
+    // --- Excel 匯出 (每 5 桌一組) ---
     function exportSeatingToExcel() {
         const allTables = document.querySelectorAll('.table-wrap');
         const exportData = [];
@@ -555,7 +569,7 @@
     }
 
     function downloadTemplate() {
-        const ws = XLSX.utils.aoa_to_sheet([["姓名", "男家/女家", "分類"], ["王小明", "男家", "朋友"]]);
+        const ws = XLSX.utils.aoa_to_sheet([["姓名", "男家/女家", "分類"], ["範例賓客", "男家", "朋友"]]);
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "範本");
         XLSX.writeFile(wb, "婚禮賓客範本.xlsx");
     }
