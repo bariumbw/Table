@@ -11,7 +11,7 @@
             --pink-bg: #fff5f7;
             --pink-main: #ffb3c1;
             --blue-main: #a2d2ff;
-            --text-dark: #555;
+            --text-dark: #000000; /* 修正：將全域深色文字設為純黑 */
             --danger: #ff4d4f;
         }
 
@@ -70,6 +70,7 @@
             background: white;
             flex: 1;
             min-width: 50px;
+            color: #000;
         }
 
         /* 第二層：未分配名單區 */
@@ -105,6 +106,7 @@
             box-sizing: border-box;
         }
 
+        /* 修正：賓客卡片文字內容全部設為黑色 */
         .guest-card {
             padding: 3px 5px;
             border-radius: 6px;
@@ -121,6 +123,7 @@
             justify-content: center;
             box-sizing: border-box;
             position: relative;
+            color: #000000; /* 強制文字為黑色 */
         }
 
         .guest-card.female { border-left-color: var(--pink-main); }
@@ -132,9 +135,14 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            color: #000000; /* 姓名黑色 */
         }
 
-        .guest-card small { font-size: 8.5px; color: #888; }
+        .guest-card small { 
+            font-size: 8.5px; 
+            color: #000000; /* 家方、分類黑色 */
+            font-weight: 500;
+        }
 
         .del-btn {
             position: absolute;
@@ -220,6 +228,7 @@
             box-shadow: 0 4px 10px rgba(255,179,193,0.4);
             cursor: pointer;
             text-align: center;
+            color: #d63384; /* 桌號名稱維持粉紅點綴色 */
         }
 
         .seat {
@@ -358,32 +367,28 @@
         animation: 150,
         delay: 50,
         touchStartThreshold: 5,
-        onEnd: saveAllData // 每次拖拽結束保存數據
+        onEnd: saveAllData 
     });
 
-    // --- 核心功能：保存與載入數據 ---
-
+    // 保存與載入數據 (LocalStorage)
     function saveAllData() {
         const data = {
             layout: document.getElementById('layout-config').value,
             perLimit: document.getElementById('per-table-limit').value,
             unassigned: [],
-            assigned: {} // { tableId_seatIndex: guestData }
+            assigned: {},
+            tableInfo: {}
         };
 
-        // 保存未分配名單
         document.querySelectorAll('#guest-list-container .guest-card').forEach(card => {
             data.unassigned.push(getGuestDataFromCard(card));
         });
 
-        // 保存已分配座位
         document.querySelectorAll('.table-wrap').forEach(table => {
             const tableId = table.dataset.tableId;
             const tableName = table.querySelector('.table-center').innerText;
             const seatCount = table.querySelectorAll('.seat').length;
             
-            // 儲存桌子的動態資訊（如果被修改過）
-            if(!data.tableInfo) data.tableInfo = {};
             data.tableInfo[tableId] = { name: tableName, count: seatCount };
 
             table.querySelectorAll('.seat').forEach((seat, index) => {
@@ -394,7 +399,7 @@
             });
         });
 
-        localStorage.setItem('wedding_seating_db', JSON.stringify(data));
+        localStorage.setItem('wedding_seating_db_v2', JSON.stringify(data));
     }
 
     function getGuestDataFromCard(card) {
@@ -406,16 +411,15 @@
     }
 
     function loadSavedData() {
-        const raw = localStorage.getItem('wedding_seating_db');
+        const raw = localStorage.getItem('wedding_seating_db_v2');
         if (!raw) {
-            createTables(); // 無記錄則建立預設
+            createTables();
             return;
         }
         const data = JSON.parse(raw);
         document.getElementById('layout-config').value = data.layout;
         document.getElementById('per-table-limit').value = data.perLimit;
 
-        // 重新建立桌子
         const stage = document.getElementById('tables-stage');
         stage.innerHTML = '';
         const layout = data.layout.split(',').map(item => parseInt(item.trim()) || 0);
@@ -432,10 +436,8 @@
             stage.appendChild(rowDiv); 
         });
 
-        // 恢復未分配賓客
         data.unassigned.forEach(g => renderGuest(g.name, g.side, g.role));
 
-        // 恢復已分配賓客
         for (const key in data.assigned) {
             const [tId, sIdx] = key.split('_');
             const guest = data.assigned[key];
@@ -452,12 +454,10 @@
 
     function clearAllStorage() {
         if(confirm("確定要清空所有記錄並重置嗎？")) {
-            localStorage.removeItem('wedding_seating_db');
+            localStorage.removeItem('wedding_seating_db_v2');
             location.reload();
         }
     }
-
-    // --- 原有邏輯修正與適配 ---
 
     function handleCreateTables() {
         createTables();
@@ -522,6 +522,7 @@
     function createGuestCard(name, side, role) {
         const card = document.createElement('div');
         card.className = 'guest-card' + (side === '女家' ? ' female' : '');
+        // 確保內部文字為黑字
         card.innerHTML = `<button class="del-btn" onclick="deleteGuest(this, '${name}')">×</button><strong>${name}</strong><small>${side}|${role}</small>`; 
         return card;
     }
